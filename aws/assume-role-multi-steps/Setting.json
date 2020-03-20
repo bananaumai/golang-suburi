@@ -1,0 +1,11 @@
+{
+  "A1": {
+    "ARN": "arn:aws:iam::020908030292:role/TinkerModeSBRDev1",
+    "ExternalID": "test"
+  },
+  "A2": {
+    "ARN": "arn:aws:iam::510294072364:role/TinkerModeDev2",
+    "ExternalID": "test"
+  },
+  "TargetStream": "test"
+}

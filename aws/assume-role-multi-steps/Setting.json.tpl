@@ -1,10 +1,11 @@
 {
-  "S1": {
+  "A1": {
     "ARN": "",
     "ExternalID": ""
   },
-  "S2": {
+  "A2": {
     "ARN": "",
     "ExternalID": ""
-  }
+  },
+  "TargetStream": "test"
 }
