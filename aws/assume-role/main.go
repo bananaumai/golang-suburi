@@ -28,10 +28,17 @@ func main() {
 		}
 	})
 
+	expiresAt, err := creds.ExpiresAt()
+	if err != nil {
+		log.Fatalf("failed to get expires at - %v", err)
+	}
+	fmt.Printf("creds expires at %s\n", expiresAt.Format("2006-01-02T15:04:05Z07:00"))
+
+
 	v, err := creds.Get()
 	if err != nil {
-		log.Fatalf("failed to get credentials - %v", v)
+		log.Fatalf("failed to get credentials - %v", err)
 	}
 
-	fmt.Printf("creds.%v", v)
+	fmt.Printf("creds value %v", v)
 }
