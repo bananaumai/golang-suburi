@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
 
 const nWorkers int = 4
+const nDownloaders int = 4
 
 type Reference struct{ index int }
 type Location struct{ index int }
@@ -13,6 +15,10 @@ type Content struct{ index int }
 type LocContent struct {
 	loc     Location
 	content Content
+}
+type WorkerInput struct {
+	loc      Location
+	contents chan LocContent
 }
 
 func (ref Reference) resolveLocation() Location {
@@ -37,54 +43,51 @@ func log(format string, a ...interface{}) {
 
 func downloader(
 	references <-chan Reference,
-	locations chan<- Location,
-	contents <-chan LocContent,
+	workerInputs chan<- WorkerInput,
 ) {
-	requested := make(map[Location][]Reference)
 	for {
-		select {
-		case lc := <-contents:
-			refs := requested[lc.loc]
-			delete(requested, lc.loc)
-			for _, ref := range refs {
-				processContent(ref, lc.content)
-			}
-		case ref := <-references:
-			loc := ref.resolveLocation()
-			refs, present := requested[loc]
-			if !present {
-				requested[loc] = []Reference{ref}
-				locations <- loc
-			} else {
-				requested[loc] = append(refs, ref)
-			}
+		ref := <-references
+		loc := ref.resolveLocation()
+		contents := make(chan LocContent, 1)
+		input := WorkerInput{
+			loc:      loc,
+			contents: contents,
 		}
+		workerInputs <- input
+		lc := <-contents
+		processContent(ref, lc.content)
 	}
 }
 
-func worker(
-	locations <-chan Location,
-	contents chan<- LocContent,
-) {
-	for loc := range locations {
-		content := downloadContent(loc)
-		contents <- LocContent{loc, content}
+func worker(inputs <-chan WorkerInput) {
+	for input := range inputs {
+		content := downloadContent(input.loc)
+		input.contents <- LocContent{input.loc, content}
 	}
 }
 
 func processReferences(references <-chan Reference) {
-	locations := make(chan Location)
-	contents := make(chan LocContent)
+	workerInputs := make(chan WorkerInput)
 	for i := 0; i < nWorkers; i++ {
-		go worker(locations, contents)
+		go worker(workerInputs)
 	}
-	go downloader(references, locations, contents)
+	for i := 0; i < nDownloaders; i++ {
+		go downloader(references, workerInputs)
+	}
 }
 
 func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
 	references := make(chan Reference)
 	processReferences(references)
 	for index := 1; ; index++ {
-		references <- Reference{index}
+		select {
+		case <-ctx.Done():
+			log("timed out")
+			return
+		case references <- Reference{index}:
+		}
 	}
 }

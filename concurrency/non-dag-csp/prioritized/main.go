@@ -53,15 +53,18 @@ func downloader(
 		default:
 		}
 
-		ref := <-references
-		loc := ref.resolveLocation()
-		refs, present := requested[loc]
-		if !present {
-			requested[loc] = []Reference{ref}
-			locations <- loc
-		} else {
-			requested[loc] = append(refs, ref)
+		select {
+		case ref := <-references:
+			loc := ref.resolveLocation()
+			refs, present := requested[loc]
+			if !present {
+				requested[loc] = []Reference{ref}
+				locations <- loc
+			} else {
+				requested[loc] = append(refs, ref)
+			}
 		}
+		//log("loop")
 	}
 }
 

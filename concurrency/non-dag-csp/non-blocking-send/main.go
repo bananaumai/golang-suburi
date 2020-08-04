@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -41,22 +42,37 @@ func downloader(
 	contents <-chan LocContent,
 ) {
 	requested := make(map[Location][]Reference)
+	var l *Location
+
+	handleContent := func(c LocContent) {
+		refs := requested[c.loc]
+		delete(requested, c.loc)
+		for _, ref := range refs {
+			processContent(ref, c.content)
+		}
+	}
+
 	for {
-		select {
-		case lc := <-contents:
-			refs := requested[lc.loc]
-			delete(requested, lc.loc)
-			for _, ref := range refs {
-				processContent(ref, lc.content)
+		if l != nil {
+			select {
+			case locations <- *l:
+				l = nil
+			case lc := <-contents:
+				handleContent(lc)
 			}
-		case ref := <-references:
-			loc := ref.resolveLocation()
-			refs, present := requested[loc]
-			if !present {
-				requested[loc] = []Reference{ref}
-				locations <- loc
-			} else {
-				requested[loc] = append(refs, ref)
+		} else {
+			select {
+			case ref := <-references:
+				loc := ref.resolveLocation()
+				refs, present := requested[loc]
+				if !present {
+					requested[loc] = []Reference{ref}
+					l = &loc
+				} else {
+					requested[loc] = append(refs, ref)
+				}
+			case lc := <-contents:
+				handleContent(lc)
 			}
 		}
 	}
@@ -82,9 +98,17 @@ func processReferences(references <-chan Reference) {
 }
 
 func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
 	references := make(chan Reference)
 	processReferences(references)
 	for index := 1; ; index++ {
-		references <- Reference{index}
+		select {
+		case <-ctx.Done():
+			log("timed out")
+			return
+		case references <- Reference{index}:
+		}
 	}
 }
