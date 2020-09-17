@@ -32,9 +32,9 @@ func main() {
 		encoder.EncodeFloat64(v)
 	}
 
-	bytes := writer.Bytes()
-	length := len(bytes)
-	for i, b := range bytes {
+	bs := writer.Bytes()
+	length := len(bs)
+	for i, b := range bs {
 		fmt.Printf("%02X", b)
 		if i != length-1 {
 			fmt.Print(" ")

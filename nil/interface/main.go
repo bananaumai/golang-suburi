@@ -6,7 +6,7 @@ type (
 	i interface {
 		foo()
 	}
-	s struct {}
+	s struct{}
 )
 
 func (s *s) foo() {}
@@ -21,7 +21,7 @@ func main() {
 	}
 
 	vI = cS()
-	fmt.Printf("vI(cS) : %v\n", vI)
+	fmt.Printf("vI(cS) : %+v\n", vI)
 	if vI != nil {
 		fmt.Printf("not nil !? vI(cS) : %v\n", vI)
 	} else {
