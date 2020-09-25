@@ -10,5 +10,6 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/vmihailenco/msgpack/v4 v4.3.5
 	go.mongodb.org/mongo-driver v1.4.0
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )
